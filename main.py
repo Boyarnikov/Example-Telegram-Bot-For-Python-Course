@@ -39,7 +39,7 @@ async def scream_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text=f"i have not scream for you yet")
 
 
-async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.inline_query.query:
         return
 
@@ -65,6 +65,8 @@ if __name__ == "__main__":
 
     start_handler = CommandHandler("hello", start)
     app.add_handler(start_handler)
+
+
 
     scream_handler = CommandHandler("scream", scream)
     app.add_handler(scream_handler)
