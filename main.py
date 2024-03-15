@@ -1,4 +1,5 @@
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, InlineQueryHandler, PicklePersistence
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, InlineQueryHandler, PicklePersistence, \
+    ConversationHandler
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from secrets import TOKEN
 
@@ -9,7 +10,10 @@ import random
 
 from telegram.constants import ParseMode
 
+import Model
+
 import logging
+import BotSetup
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(message)s",
@@ -18,62 +22,84 @@ logging.basicConfig(
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hello!")
+START, CREATE_LIST, EDIT_LIST, DELETE_LIST, NAME_LIST, ADD_LINE, DEL_LINE, FINISH_LINE, CLAIM_KEY = range(9)
 
 
-async def scream(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["screams"] = context.user_data.get("screams", 0) + 1
-    if context.args:
-        scream_text = " ".join(context.args).upper()
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{scream_text}!!!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if "user" not in context.user_data:
+        context.user_data["user"] = Model.User()
+        await update.message.reply_text("Добро пожаловать в менеджер листов!")
+    await update.message.reply_text("Что вы хотите сделать с вашими листами?")
+    return START
 
 
-async def scream_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if "screams" in context.user_data:
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=f'You made me scream {context.user_data["screams"]} times')
+async def create_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    list_name = context.args[0] if context.args else "UndefinedList"
+    data_list = Model.DataList(list_name)
+    context.user_data["user"].lists.append(data_list.id)
+
+    await update.message.reply_text(f"Новый лист {list_name} был создан!")
+    await start(update, context)
+
+    return START
+
+
+async def del_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    found_lists = []
+    matches = []
+    if not context.args:
+        found_lists = [Model.DataList.lists[list_index].name for list_index in context.user_data["user"].lists]
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=f"i have not scream for you yet")
+        for list_index in context.user_data["user"].lists:
+            list_name = Model.DataList.lists[list_index].name
+            if list_name.lower().startswith(context.args[0].lower()):
+                found_lists.append(list_name)
+            if list_name.lower().startswith == context.args[0].lower():
+                matches.append(list_name)
+
+    await update.message.reply_text(f"Найдены совпадения: {found_lists}")
+    await update.message.reply_text(f"Найдены похожие: {matches}")
+
+    await start(update, context)
+
+    return START
 
 
-async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.inline_query.query:
-        return
+async def view_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    names = []
+    for list_index in context.user_data["user"].lists:
+        list_name = Model.DataList.lists[list_index].name
+        names.append(list_name)
 
-    exclamations = "!" * random.randint(1, 10)
-    result = [InlineQueryResultArticle(
-        id=str(uuid4()),
-        title="Scream this very loud",
-        input_message_content=InputTextMessageContent(
-            f"<b><i>{update.inline_query.query.upper()}{exclamations}</i></b>", parse_mode=ParseMode.HTML
-        )
-    )]
+    print(", ".join(i.name for i in Model.DataList.lists.values()))
 
-    await update.inline_query.answer(result, cache_time=60)
+    await update.message.reply_text(f"Найдены листы: {names}")
+
+    await start(update, context)
+
+    return START
+
+
+async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text("Работа с листами закончена")
+    return ConversationHandler.END
 
 
 if __name__ == "__main__":
-    per = PicklePersistence(filepath="data")
+    app = BotSetup.setup_app()
 
-    app_b = ApplicationBuilder()
-    app_b.token(TOKEN)
-    app_b.persistence(per)
-    app = app_b.build()
+    start_conversation_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            START: [
+                CommandHandler("create_list", create_list),
+                CommandHandler("delete_list", del_list),
+                CommandHandler("view_list", view_list)
+            ]
+        },
+        fallbacks=[CommandHandler("done", done)]
+    )
 
-    start_handler = CommandHandler("hello", start)
-    app.add_handler(start_handler)
-
-
-
-    scream_handler = CommandHandler("scream", scream)
-    app.add_handler(scream_handler)
-
-    scream_counter_handler = CommandHandler("scream_count", scream_count)
-    app.add_handler(scream_counter_handler)
-
-    app.add_handler(InlineQueryHandler(inline))
+    app.add_handler(start_conversation_handler)
 
     app.run_polling()
