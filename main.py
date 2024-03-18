@@ -1,14 +1,5 @@
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, InlineQueryHandler, PicklePersistence, \
-    ConversationHandler
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
-from secrets import TOKEN
-
-from html import escape
-from uuid import uuid4
-
-import random
-
-from telegram.constants import ParseMode
+from telegram.ext import ContextTypes, CommandHandler, ConversationHandler
+from telegram import Update
 
 import Model
 
