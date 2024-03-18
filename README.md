@@ -16,3 +16,7 @@
 - И пока хватит
 
 ![Scheme](bin/Telebot_scheme.jpg)
+
+# Структура БД
+
+![DBScheme](bin/DBscheme.jpg)
