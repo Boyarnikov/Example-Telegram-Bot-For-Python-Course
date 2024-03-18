@@ -1,5 +1,4 @@
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, InlineQueryHandler, PicklePersistence
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import ApplicationBuilder, PicklePersistence
 from secrets import TOKEN
 import Model
 
