@@ -25,6 +25,7 @@ def main():
         session.commit()
 
 
+# ToDo: remove this :)
 def create_lines(list_id) -> Union[bool, Exception]:
     with Session(engine) as session:
         data_list = None

@@ -10,10 +10,5 @@ def setup_app():
     app_b.token(TOKEN)
     app_b.persistence(per)
     app = app_b.build()
-
-    app.bot_data["lists"] = Model.DataList.lists
-    app.bot_data["users"] = Model.User.users
-    app.bot_data["keys"] = Model.Key.keys
-
     return app
 

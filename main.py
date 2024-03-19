@@ -13,9 +13,11 @@ logging.basicConfig(
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
+# ToDo: better way to store state machine
 START, CREATE_LIST, EDIT_LIST, DELETE_LIST, NAME_LIST, ADD_LINE, DEL_LINE, FINISH_LINE, CLAIM_KEY = range(9)
 
 
+# ToDo: refactor bot list conversation to the different module
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if "user" not in context.user_data:
         context.user_data["user"] = Model.User()
@@ -25,9 +27,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def create_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Creating a new list from name, should check for repeats"""
+    # ToDo: integrate db
     list_name = context.args[0] if context.args else "UndefinedList"
-    data_list = Model.DataList(list_name)
-    context.user_data["user"].lists.append(data_list.id)
+
 
     await update.message.reply_text(f"Новый лист {list_name} был создан!")
     await start(update, context)
@@ -38,6 +41,7 @@ async def create_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 async def del_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     found_lists = []
     matches = []
+    # ToDo: integrate db, remove all logic based on python search
     if not context.args:
         found_lists = [Model.DataList.lists[list_index].name for list_index in context.user_data["user"].lists]
     else:
@@ -57,6 +61,7 @@ async def del_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def view_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # ToDo: integrate db
     names = []
     for list_index in context.user_data["user"].lists:
         list_name = Model.DataList.lists[list_index].name
@@ -79,6 +84,7 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 if __name__ == "__main__":
     app = BotSetup.setup_app()
 
+    # ToDo: migrate conversation to the own module
     start_conversation_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
